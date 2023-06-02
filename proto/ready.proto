@@ -1,9 +1,8 @@
-// Test Documentation
 syntax = "proto3";
-package grpc;
+package ready;
 
 // Heartbeat
-service RpcService {
+service ReadyRpcService {
     // Common Interfaces
     rpc isReady (ReadyRequest) returns (ReadyResponse);
 }

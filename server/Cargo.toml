@@ -11,6 +11,8 @@ license-file.workspace = true
 repository.workspace   = true
 
 [features]
+cargo            = []
+default          = ["cargo"]
 vendored-openssl = ['openssl/vendored']
 
 [dependencies]
@@ -34,6 +36,10 @@ tokio        = { version = "1.20", features = ["full"] }
 tokio-util   = "0.7"
 tonic        = "0.8"
 tonic-health = "0.8"
+
+[dependencies.lib-common]
+git = "https://github.com/Arrow-air/lib-common.git"
+tag = "v0.1.1-develop.2"
 
 [dependencies.utoipa]
 features = ["axum_extras", "chrono"]

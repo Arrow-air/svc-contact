@@ -1,11 +1,20 @@
 //! gRPC server implementation
 
+/// Common types used by the gRPC server
+pub mod common {
+    tonic::include_proto!("common");
+}
+
 ///module generated from proto/svc-contact-grpc.proto
 pub mod grpc_server {
     #![allow(unused_qualifications, missing_docs)]
-    tonic::include_proto!("grpc");
+    tonic::include_proto!("ready");
+
+    #[cfg(feature = "cargo")]
+    tonic::include_proto!("cargo");
 }
-use grpc_server::rpc_service_server::{RpcService, RpcServiceServer};
+
+use grpc_server::ready_rpc_service_server::{ReadyRpcService, ReadyRpcServiceServer};
 use grpc_server::{ReadyRequest, ReadyResponse};
 
 use crate::config::Config;
@@ -16,12 +25,42 @@ use std::net::SocketAddr;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
+#[cfg(feature = "cargo")]
+mod cargo {
+    pub use super::grpc_server::cargo_rpc_service_server::{
+        CargoRpcService, CargoRpcServiceServer,
+    };
+    use super::grpc_server::{CargoConfirmationRequest, CargoConfirmationResponse};
+    use tonic::{Request, Response, Status};
+
+    /// struct to implement the gRPC server functions
+    #[derive(Debug, Default, Copy, Clone)]
+    pub struct CargoServerImpl {}
+
+    #[tonic::async_trait]
+    impl CargoRpcService for CargoServerImpl {
+        /// Returns ready:true when service is available
+        async fn cargo_confirmation(
+            &self,
+            _request: Request<CargoConfirmationRequest>,
+        ) -> Result<Response<CargoConfirmationResponse>, Status> {
+            grpc_debug!("(grpc is_ready) entry.");
+
+            //
+            // TODO(R3) Contact svc-storage and get user_id from itinerary_id
+            //
+            let response = CargoConfirmationResponse { success: true };
+            Ok(Response::new(response))
+        }
+    }
+}
+
 /// struct to implement the gRPC server functions
 #[derive(Debug, Default, Copy, Clone)]
-pub struct GRPCServerImpl {}
+pub struct ReadyServerImpl {}
 
 #[tonic::async_trait]
-impl RpcService for GRPCServerImpl {
+impl ReadyRpcService for ReadyServerImpl {
     /// Returns ready:true when service is available
     async fn is_ready(
         &self,
@@ -59,16 +98,23 @@ pub async fn grpc_server(config: Config) {
     };
 
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
-    let imp = GRPCServerImpl::default();
+    let ready_impl = ReadyServerImpl::default();
     health_reporter
-        .set_serving::<RpcServiceServer<GRPCServerImpl>>()
+        .set_serving::<ReadyRpcServiceServer<ReadyServerImpl>>()
         .await;
 
     //start server
     grpc_info!("Starting GRPC servers on: {}.", full_grpc_addr);
-    match Server::builder()
+    let builder = Server::builder()
         .add_service(health_service)
-        .add_service(RpcServiceServer::new(imp))
+        .add_service(ReadyRpcServiceServer::new(ready_impl));
+
+    #[cfg(feature = "cargo")]
+    let builder = builder.add_service(cargo::CargoRpcServiceServer::new(
+        cargo::CargoServerImpl::default(),
+    ));
+
+    match builder
         .serve_with_shutdown(full_grpc_addr, shutdown_signal("grpc"))
         .await
     {
