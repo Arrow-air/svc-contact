@@ -1,8 +1,16 @@
 //! gRPC client implementation
 
 use std::env;
+
 #[allow(unused_qualifications, missing_docs)]
-use svc_contact_client_grpc::client::{rpc_service_client::RpcServiceClient, ReadyRequest};
+use svc_contact_client_grpc::clients::{
+    ready_rpc_service_client::ReadyRpcServiceClient, ReadyRequest,
+};
+
+#[cfg(feature = "cargo")]
+use svc_contact_client_grpc::clients::{
+    cargo_rpc_service_client::CargoRpcServiceClient, CargoConfirmationRequest,
+};
 
 /// Provide endpoint url to use
 pub fn get_grpc_endpoint() -> String {
@@ -20,6 +28,30 @@ pub fn get_grpc_endpoint() -> String {
     format!("http://{}:{}", address, port)
 }
 
+/// Example of using the ready service
+async fn ready_example(grpc_endpoint: String) -> Result<(), Box<dyn std::error::Error>> {
+    let mut client = ReadyRpcServiceClient::connect(grpc_endpoint).await?;
+    let request = tonic::Request::new(ReadyRequest {});
+    let response = client.is_ready(request).await?;
+    println!("RESPONSE={:?}", response);
+
+    Ok(())
+}
+
+/// Example of using the cargo service
+#[cfg(feature = "cargo")]
+async fn cargo_example(grpc_endpoint: String) -> Result<(), Box<dyn std::error::Error>> {
+    let mut client = CargoRpcServiceClient::connect(grpc_endpoint).await?;
+    let request = tonic::Request::new(CargoConfirmationRequest {
+        package_id: uuid::Uuid::new_v4().to_string(),
+    });
+
+    let response = client.cargo_confirmation(request).await?;
+    println!("RESPONSE={:?}", response);
+
+    Ok(())
+}
+
 /// Example svc-template-client-grpc
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,15 +62,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         grpc_endpoint
     );
 
-    let mut client = RpcServiceClient::connect(grpc_endpoint).await?;
+    ready_example(grpc_endpoint.clone()).await?;
 
-    println!("Client created");
-
-    let response = client
-        .is_ready(tonic::Request::new(ReadyRequest {}))
-        .await?;
-
-    println!("RESPONSE={:?}", response.into_inner());
+    #[cfg(feature = "cargo")]
+    cargo_example(grpc_endpoint.clone()).await?;
 
     Ok(())
 }

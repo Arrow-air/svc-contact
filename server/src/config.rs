@@ -14,6 +14,10 @@ pub struct Config {
     pub docker_port_grpc: u16,
     /// port to be used for REST server
     pub docker_port_rest: u16,
+    /// host of the storage gRPC server
+    pub storage_host_grpc: String,
+    /// port of the storage gRPC server
+    pub storage_port_grpc: u16,
     /// path to log configuration YAML file
     pub log_config: String,
 }
@@ -30,6 +34,8 @@ impl Config {
         Config {
             docker_port_grpc: 50051,
             docker_port_rest: 8000,
+            storage_host_grpc: String::from("svc-storage"),
+            storage_port_grpc: 50003,
             log_config: String::from("log4rs.yaml"),
         }
     }

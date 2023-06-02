@@ -1,0 +1,21 @@
+syntax = "proto3";
+package common;
+import "google/protobuf/timestamp.proto";
+
+// Stage of the Itinerary, between Vertiports
+message Leg {
+    // Starting Vertiport
+    string vertiport_departure = 1;
+
+    // Departure Time Estimate
+    google.protobuf.Timestamp timestamp_departure = 2;
+
+    // Ending Vertiport
+    string vertiport_arrival = 3;
+
+    // Landing Time Estimate
+    google.protobuf.Timestamp timestamp_arrival = 4;
+
+    // Aircraft UUID
+    string aircraft_id = 5;
+}

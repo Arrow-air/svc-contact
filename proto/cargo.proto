@@ -1,0 +1,22 @@
+syntax = "proto3";
+package cargo;
+
+import "common.proto";
+
+// Heartbeat
+service CargoRpcService {
+    // Cargo Confirmation
+    rpc cargoConfirmation (CargoConfirmationRequest) returns (CargoConfirmationResponse);
+}
+
+// Cargo Confirmation Request object
+message CargoConfirmationRequest {
+    // The UUID of the package
+    string parcel_id = 1;
+}
+
+// Cargo Confirmation Response object
+message CargoConfirmationResponse {
+    // Whether the cargo trip was confirmed
+    bool success = 1;
+}
